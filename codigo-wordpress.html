@@ -1,0 +1,44 @@
+<!-- 
+  Copia y pega este código en tu WordPress utilizando un bloque de "HTML Personalizado" (Custom HTML).
+  
+  IMPORTANTE: 
+  Una vez que subas tu archivo "video.json" a GitHub, debes obtener su enlace "Raw" (Crudo) 
+  y reemplazar la URL que dice "TU_ENLACE_RAW_AQUI" por ese enlace de GitHub.
+-->
+
+<div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%;">
+  <iframe 
+    id="dynamic-youtube-iframe" 
+    style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" 
+    src="" 
+    frameborder="0" 
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+    allowfullscreen>
+  </iframe>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    // === ⚠️ REEMPLAZA LA SIGUIENTE URL POR TU ENLACE RAW DE GITHUB ⚠️ ===
+    const configUrl = 'TU_ENLACE_RAW_AQUI'; 
+    // Ejemplo de cómo se ve: 'https://raw.githubusercontent.com/tu-usuario/youtube-bridge/main/video.json'
+
+    fetch(configUrl)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Error en la red al intentar obtener el archivo');
+        }
+        return response.json();
+      })
+      .then(data => {
+        if (data && data.videoId) {
+          const iframe = document.getElementById('dynamic-youtube-iframe');
+          // Se asigna la URL al iframe usando el videoId que sacamos del archivo de texto (JSON)
+          iframe.src = 'https://www.youtube.com/embed/' + data.videoId;
+        }
+      })
+      .catch(error => {
+        console.error('No se pudo cargar la configuración del video externo:', error);
+      });
+  });
+</script>
