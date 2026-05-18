@@ -14,7 +14,8 @@ jobs:
       - name: Obtener el Video ID de YouTube directamente
         run: |
           # ⚠️ REEMPLAZA EL ID DEL CANAL SI ES NECESARIO ⚠️
-          CHANNEL_ID="UCDKV0eYokNHy4cLPc9MWkWA"
+          CHANNEL_ID="UCdqzXVgmwUi3Bb7iPvYSK5A"
+
           
           # Descargar el feed RSS oficial de YouTube para el canal
           curl -s "https://www.youtube.com/feeds/videos.xml?channel_id=$CHANNEL_ID" > feed.xml
