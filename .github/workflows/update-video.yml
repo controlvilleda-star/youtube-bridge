@@ -1,8 +1,8 @@
 name: Update Video ID
 on:
   schedule:
-    - cron: '*/5 * * * *' # Ejecuta cada 5 minutos
-  workflow_dispatch: # Permite ejecución manual desde GitHub
+    - cron: '*/5 * * * *' # Se ejecuta cada 5 minutos
+  workflow_dispatch: # Permite ejecutarlo manualmente
 
 jobs:
   update:
@@ -11,25 +11,25 @@ jobs:
       - name: Checkout del repositorio
         uses: actions/checkout@v3
 
-      - name: Obtener el Video ID del Listener
+      - name: Obtener el Video ID de YouTube directamente
         run: |
-          # ⚠️ REEMPLAZA ESTA URL por la de tu listener en Render/Railway etc. ⚠️
-          LISTENER_URL="https://TU_APP_URL.onrender.com/youtube-live.json"
+          # ⚠️ REEMPLAZA EL ID DEL CANAL SI ES NECESARIO ⚠️
+          CHANNEL_ID="UCDKV0eYokNHy4cLPc9MWkWA"
           
-          # Descargar el json del listener
-          curl -s $LISTENER_URL > listener_data.json
+          # Descargar el feed RSS oficial de YouTube para el canal
+          curl -s "https://www.youtube.com/feeds/videos.xml?channel_id=$CHANNEL_ID" > feed.xml
           
-          # Extraer el VideoId
-          VIDEO_ID=$(jq -r '.VideoId' listener_data.json)
+          # Extraer el ID del video más reciente (el primero en la lista)
+          VIDEO_ID=$(grep -oP "(?<=<yt:videoId>)[^<]+" feed.xml | head -n 1)
           
-          if [ -n "$VIDEO_ID" ] && [ "$VIDEO_ID" != "null" ]; then
-            # Crear el formato requerido para video.json
+          if [ -n "$VIDEO_ID" ]; then
+            # Crear o sobreescribir el archivo video.json
             echo "{
   \"videoId\": \"$VIDEO_ID\"
 }" > video.json
-            echo "Video ID obtenido: $VIDEO_ID"
+            echo "Video ID obtenido de YouTube: $VIDEO_ID"
           else
-            echo "No se pudo obtener el Video ID."
+            echo "No se pudo obtener el Video ID desde YouTube."
             exit 1
           fi
 
@@ -40,10 +40,10 @@ jobs:
           
           # Revisar si hay cambios en video.json
           if git diff --exit-code video.json; then
-            echo "El Video ID no ha cambiado. No se hace commit."
+            echo "El Video ID es el mismo. No hay cambios."
           else
             git add video.json
-            git commit -m "Actualizando videoId desde el listener"
+            git commit -m "Actualizando videoId desde YouTube directamente"
             git push
             echo "Nuevos cambios subidos a GitHub."
           fi
