@@ -1,0 +1,49 @@
+name: Update Video ID
+on:
+  schedule:
+    - cron: '*/5 * * * *' # Ejecuta cada 5 minutos
+  workflow_dispatch: # Permite ejecución manual desde GitHub
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v3
+
+      - name: Obtener el Video ID del Listener
+        run: |
+          # ⚠️ REEMPLAZA ESTA URL por la de tu listener en Render/Railway etc. ⚠️
+          LISTENER_URL="https://TU_APP_URL.onrender.com/youtube-live.json"
+          
+          # Descargar el json del listener
+          curl -s $LISTENER_URL > listener_data.json
+          
+          # Extraer el VideoId
+          VIDEO_ID=$(jq -r '.VideoId' listener_data.json)
+          
+          if [ -n "$VIDEO_ID" ] && [ "$VIDEO_ID" != "null" ]; then
+            # Crear el formato requerido para video.json
+            echo "{
+  \"videoId\": \"$VIDEO_ID\"
+}" > video.json
+            echo "Video ID obtenido: $VIDEO_ID"
+          else
+            echo "No se pudo obtener el Video ID."
+            exit 1
+          fi
+
+      - name: Hacer commit y push de los cambios
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Revisar si hay cambios en video.json
+          if git diff --exit-code video.json; then
+            echo "El Video ID no ha cambiado. No se hace commit."
+          else
+            git add video.json
+            git commit -m "Actualizando videoId desde el listener"
+            git push
+            echo "Nuevos cambios subidos a GitHub."
+          fi
