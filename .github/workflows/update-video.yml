@@ -29,9 +29,7 @@ jobs:
           
           if [ -n "$VIDEO_ID" ]; then
             # Crear o sobreescribir el archivo video.json
-            echo "{
-  \"videoId\": \"$VIDEO_ID\"
-}" > video.json
+            echo "{\"videoId\": \"$VIDEO_ID\"}" > video.json
             echo "Video ID obtenido de YouTube: $VIDEO_ID"
           else
             echo "No se pudo obtener el Video ID desde YouTube."
