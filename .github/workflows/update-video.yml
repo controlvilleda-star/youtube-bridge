@@ -13,7 +13,7 @@ jobs:
       contents: write
     steps:
       - name: Checkout del repositorio
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Obtener el Video ID de YouTube directamente
         run: |
