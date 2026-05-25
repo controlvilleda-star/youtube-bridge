@@ -20,19 +20,31 @@ jobs:
           # ⚠️ REEMPLAZA EL ID DEL CANAL SI ES NECESARIO ⚠️
           CHANNEL_ID="UCdqzXVgmwUi3Bb7iPvYSK5A"
 
-          
-          # Descargar el feed RSS oficial de YouTube para el canal
-          curl -s "https://www.youtube.com/feeds/videos.xml?channel_id=$CHANNEL_ID" > feed.xml
-          
-          # Extraer el ID del video más reciente (el primero en la lista)
-          VIDEO_ID=$(grep -oP "(?<=<yt:videoId>)[^<]+" feed.xml | head -n 1)
+          # Intentar descargar el feed RSS con reintentos y User-Agent para evitar bloqueos
+          VIDEO_ID=""
+          for i in {1..3}; do
+            echo "Intento $i: Descargando feed de YouTube..."
+            curl -s -L -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" "https://www.youtube.com/feeds/videos.xml?channel_id=$CHANNEL_ID" > feed.xml
+            
+            # Extraer el ID del video más reciente (el primero en la lista)
+            VIDEO_ID=$(grep -oP "(?<=<yt:videoId>)[^<]+" feed.xml | head -n 1)
+            
+            if [ -n "$VIDEO_ID" ]; then
+              break
+            fi
+            
+            echo "No se pudo obtener el Video ID en el intento $i. Contenido de respuesta:"
+            cat feed.xml | head -n 10
+            echo "Esperando 5 segundos para reintentar..."
+            sleep 5
+          done
           
           if [ -n "$VIDEO_ID" ]; then
             # Crear o sobreescribir el archivo video.json
             echo "{\"videoId\": \"$VIDEO_ID\"}" > video.json
             echo "Video ID obtenido de YouTube: $VIDEO_ID"
           else
-            echo "No se pudo obtener el Video ID desde YouTube."
+            echo "Error: No se pudo obtener el Video ID de YouTube después de 3 intentos."
             exit 1
           fi
 
