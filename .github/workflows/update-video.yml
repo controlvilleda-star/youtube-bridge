@@ -20,31 +20,34 @@ jobs:
           # ⚠️ REEMPLAZA EL ID DEL CANAL SI ES NECESARIO ⚠️
           CHANNEL_ID="UCdqzXVgmwUi3Bb7iPvYSK5A"
 
-          # Intentar descargar el feed RSS con reintentos y User-Agent para evitar bloqueos
           VIDEO_ID=""
-          for i in {1..3}; do
-            echo "Intento $i: Descargando feed de YouTube..."
-            curl -s -L -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" "https://www.youtube.com/feeds/videos.xml?channel_id=$CHANNEL_ID" > feed.xml
-            
-            # Extraer el ID del video más reciente (el primero en la lista)
-            VIDEO_ID=$(grep -oP "(?<=<yt:videoId>)[^<]+" feed.xml | head -n 1)
-            
-            if [ -n "$VIDEO_ID" ]; then
-              break
-            fi
-            
-            echo "No se pudo obtener el Video ID en el intento $i. Contenido de respuesta:"
-            cat feed.xml | head -n 10
-            echo "Esperando 5 segundos para reintentar..."
-            sleep 5
-          done
+
+          # --- Método A: Descarga Directa del Feed de YouTube ---
+          echo "Intentando descargar feed de YouTube directamente..."
+          curl -s -L -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" "https://www.youtube.com/feeds/videos.xml?channel_id=$CHANNEL_ID" > feed.xml
           
+          # Extraer el ID del video más reciente (el primero en la lista)
+          VIDEO_ID=$(grep -oP "(?<=<yt:videoId>)[^<]+" feed.xml | head -n 1)
+
+          # --- Método B: Fallback vía API de rss2json (IPs de proxy que evitan bloqueos de Google) ---
+          if [ -z "$VIDEO_ID" ]; then
+            echo "Aviso: El feed directo falló o fue bloqueado por YouTube. Usando fallback vía API rss2json..."
+            curl -s -L "https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Fwww.youtube.com%2Ffeeds%2Fvideos.xml%3Fchannel_id%3D$CHANNEL_ID" > response.json
+            
+            # Extraer el primer ID de video del JSON retornado
+            VIDEO_ID=$(grep -oP '"guid":"yt:video:\K[^"]+' response.json | head -n 1)
+          fi
+
+          # --- Validación y Guardado ---
           if [ -n "$VIDEO_ID" ]; then
-            # Crear o sobreescribir el archivo video.json
             echo "{\"videoId\": \"$VIDEO_ID\"}" > video.json
-            echo "Video ID obtenido de YouTube: $VIDEO_ID"
+            echo "Video ID obtenido con éxito: $VIDEO_ID"
           else
-            echo "Error: No se pudo obtener el Video ID de YouTube después de 3 intentos."
+            echo "Error: No se pudo obtener el Video ID de YouTube usando ningún método."
+            echo "--- Contenido del feed.xml directo ---"
+            cat feed.xml | head -n 15
+            echo "--- Contenido de response.json (si existe) ---"
+            [ -f response.json ] && cat response.json | head -n 15
             exit 1
           fi
 
